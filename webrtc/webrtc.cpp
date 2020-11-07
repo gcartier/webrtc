@@ -6,11 +6,18 @@
 #include <modules/audio_processing/include/audio_processing.h>
 
 
-extern "C" __declspec(dllexport) int  ap_setup(int, bool, bool, bool);
-extern "C" __declspec(dllexport) void ap_delete();
-extern "C" __declspec(dllexport) void ap_delay(int);
-extern "C" __declspec(dllexport) int  ap_process_reverse(int, int, int16_t*);
-extern "C" __declspec(dllexport) int  ap_process(int, int, int16_t*);
+#ifdef _WIN32
+  #define SHARED_PUBLIC __declspec(dllexport)
+#else
+  #define SHARED_PUBLIC __attribute__ ((visibility ("default")))
+#endif
+
+
+extern "C" SHARED_PUBLIC int  ap_setup(int, bool, bool, bool);
+extern "C" SHARED_PUBLIC void ap_delete();
+extern "C" SHARED_PUBLIC void ap_delay(int);
+extern "C" SHARED_PUBLIC int  ap_process_reverse(int, int, int16_t*);
+extern "C" SHARED_PUBLIC int  ap_process(int, int, int16_t*);
 
 
 webrtc::AudioProcessing* apm;
