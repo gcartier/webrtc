@@ -13,11 +13,19 @@
 #endif
 
 
-extern "C" SHARED_PUBLIC int  ap_setup(int, bool, bool, int);
+extern "C" SHARED_PUBLIC int  ap_setup(int, bool, bool, int, int);
 extern "C" SHARED_PUBLIC void ap_delete();
 extern "C" SHARED_PUBLIC void ap_delay(int);
 extern "C" SHARED_PUBLIC int  ap_process_reverse(int, int, int16_t*);
 extern "C" SHARED_PUBLIC int  ap_process(int, int, int16_t*);
+
+
+static const webrtc::AudioProcessing::Config::NoiseSuppression::Level noise_suppression_levels[] = {
+    webrtc::AudioProcessing::Config::NoiseSuppression::kLow,
+    webrtc::AudioProcessing::Config::NoiseSuppression::kModerate,
+    webrtc::AudioProcessing::Config::NoiseSuppression::kHigh,
+    webrtc::AudioProcessing::Config::NoiseSuppression::kVeryHigh,
+};
 
 
 static const rtc::LoggingSeverity logging_severities[] = {
@@ -32,7 +40,7 @@ static const rtc::LoggingSeverity logging_severities[] = {
 webrtc::AudioProcessing* apm;
 
 
-int ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int logging_severity)
+int ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noise_suppression_level, int logging_severity)
 {
     webrtc::AudioProcessing::Config config;
     
@@ -45,7 +53,7 @@ int ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int log
     config.echo_canceller.enabled = echo_cancel;
     config.echo_canceller.mobile_mode = false;
     config.noise_suppression.enabled = noise_suppress;
-    // config.noise_suppression.level = webrtc::AudioProcessing::Config::NoiseSuppression::kVeryHigh;
+    config.noise_suppression.level = noise_suppression_levels[noise_suppression_level];
     
     apm = webrtc::AudioProcessingBuilder().Create();
     apm->ApplyConfig(config);
