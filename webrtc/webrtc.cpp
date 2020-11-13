@@ -13,23 +13,32 @@
 #endif
 
 
-extern "C" SHARED_PUBLIC int  ap_setup(int, bool, bool, bool);
+extern "C" SHARED_PUBLIC int  ap_setup(int, bool, bool, int);
 extern "C" SHARED_PUBLIC void ap_delete();
 extern "C" SHARED_PUBLIC void ap_delay(int);
 extern "C" SHARED_PUBLIC int  ap_process_reverse(int, int, int16_t*);
 extern "C" SHARED_PUBLIC int  ap_process(int, int, int16_t*);
 
 
+static const rtc::LoggingSeverity logging_severities[] = {
+    rtc::LS_NONE,
+    rtc::LS_ERROR,
+    rtc::LS_WARNING,
+    rtc::LS_INFO,
+    rtc::LS_VERBOSE,
+};
+
+
 webrtc::AudioProcessing* apm;
 
 
-int ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, bool use_logging)
+int ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int logging_severity)
 {
     webrtc::AudioProcessing::Config config;
     
     int err = 0;
 
-    rtc::LogMessage::LogToDebug(use_logging ? rtc::LS_INFO : rtc::LS_NONE);
+    rtc::LogMessage::LogToDebug(logging_severities[logging_severity]);
     
     config.pipeline.maximum_internal_processing_rate = processing_rate;
     
