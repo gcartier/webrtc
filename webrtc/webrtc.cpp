@@ -5,7 +5,11 @@
 #include <api/audio/audio_frame.h>
 #include <modules/audio_processing/include/audio_processing.h>
 
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <glib.h>
+#endif
 
 
 #ifdef _WIN32
@@ -15,7 +19,7 @@
 #endif
 
 
-extern "C" SHARED_PUBLIC int  ap_setup(int, bool, bool, int, int);
+extern "C" SHARED_PUBLIC void ap_setup(int, bool, bool, int, int);
 extern "C" SHARED_PUBLIC void ap_delete();
 extern "C" SHARED_PUBLIC void ap_delay(int);
 extern "C" SHARED_PUBLIC int  ap_process_reverse(int, int, int16_t*);
@@ -42,28 +46,39 @@ static const rtc::LoggingSeverity logging_severities[] = {
 webrtc::AudioProcessing* apm = NULL;
 
 
+#ifdef _WIN32
 HANDLE mutex = NULL;
+#else
+GMutex mutex;
+#endif
     
 void lock_mutex()
 {
+#ifdef _WIN32
     if (! mutex)
         mutex = CreateMutex(NULL, FALSE, NULL);
     WaitForSingleObject(mutex, INFINITE);
+#else
+    g_mutex_lock(&mutex);
+#endif
 }
     
 void unlock_mutex()
 {
+#ifdef _WIN32
     ReleaseMutex(mutex);
+#else
+    g_mutex_unlock(&mutex);
+#endif
 }
 
 
-int ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noise_suppression_level, int logging_severity)
+webrtc::AudioProcessing::Config config;
+
+
+void ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noise_suppression_level, int logging_severity)
 {
     lock_mutex();
-    
-    webrtc::AudioProcessing::Config config;
-    
-    int err = 0;
 
     rtc::LogMessage::LogToDebug(logging_severities[logging_severity]);
     
@@ -74,14 +89,16 @@ int ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noi
     config.noise_suppression.enabled = noise_suppress;
     config.noise_suppression.level = noise_suppression_levels[noise_suppression_level];
     
+    unlock_mutex();
+}
+
+
+void ap_create()
+{
     apm = webrtc::AudioProcessingBuilder().Create();
     apm->ApplyConfig(config);
 
-    err = apm->Initialize();
-    
-    unlock_mutex();
-
-    return err;
+    apm->Initialize();
 }
 
 
@@ -89,8 +106,11 @@ void ap_delete()
 {
     lock_mutex();
     
-    delete apm;
-    apm = NULL;
+    if (apm)
+    {
+        delete apm;
+        apm = NULL;
+    }
     
     unlock_mutex();
 }
@@ -100,9 +120,8 @@ void ap_delay(int delay)
 {
     lock_mutex();
     
-    // quicky
     if (! apm)
-        return;
+        ap_create();
     
     apm->set_stream_delay_ms(delay);
     
@@ -114,9 +133,8 @@ int ap_process_reverse(int rate, int channels, int16_t* data)
 {
     lock_mutex();
     
-    // quicky
     if (! apm)
-        return 0;
+        ap_create();
     
     int err = 0;
     
@@ -134,9 +152,8 @@ int ap_process(int rate, int channels, int16_t* data)
 {
     lock_mutex();
     
-    // quicky
     if (! apm)
-        return 0;
+        ap_create();
     
     int err = 0;
     
