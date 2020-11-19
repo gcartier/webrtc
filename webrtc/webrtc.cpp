@@ -74,6 +74,7 @@ void unlock_mutex()
 
 
 webrtc::AudioProcessing::Config config;
+bool configured = false;
 
 
 void ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noise_suppression_level, int logging_severity)
@@ -88,6 +89,8 @@ void ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int no
     config.echo_canceller.mobile_mode = false;
     config.noise_suppression.enabled = noise_suppress;
     config.noise_suppression.level = noise_suppression_levels[noise_suppression_level];
+    
+    configured = true;
     
     unlock_mutex();
 }
@@ -120,10 +123,13 @@ void ap_delay(int delay)
 {
     lock_mutex();
     
-    if (! apm)
-        ap_create();
-    
-    apm->set_stream_delay_ms(delay);
+    if (configured)
+    {
+        if (! apm)
+            ap_create();
+        
+        apm->set_stream_delay_ms(delay);
+    }
     
     unlock_mutex();
 }
@@ -132,15 +138,18 @@ void ap_delay(int delay)
 int ap_process_reverse(int rate, int channels, int16_t* data)
 {
     lock_mutex();
-    
-    if (! apm)
-        ap_create();
-    
+        
     int err = 0;
     
-    webrtc::StreamConfig config(rate, channels, false);
-    
-    err = apm->ProcessReverseStream(data, config, config, data);
+    if (configured)
+    {
+        if (! apm)
+            ap_create();
+        
+        webrtc::StreamConfig config(rate, channels, false);
+        
+        err = apm->ProcessReverseStream(data, config, config, data);
+    }
     
     unlock_mutex();
     
@@ -152,14 +161,17 @@ int ap_process(int rate, int channels, int16_t* data)
 {
     lock_mutex();
     
-    if (! apm)
-        ap_create();
-    
     int err = 0;
     
-    webrtc::StreamConfig config(rate, channels, false);
-    
-    err = apm->ProcessStream(data, config, config, data);
+    if (configured)
+    {
+        if (! apm)
+            ap_create();
+        
+        webrtc::StreamConfig config(rate, channels, false);
+        
+        err = apm->ProcessStream(data, config, config, data);
+    }
     
     unlock_mutex();
     
