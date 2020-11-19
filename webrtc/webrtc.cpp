@@ -5,6 +5,8 @@
 #include <api/audio/audio_frame.h>
 #include <modules/audio_processing/include/audio_processing.h>
 
+#include <windows.h>
+
 
 #ifdef _WIN32
   #define SHARED_PUBLIC __declspec(dllexport)
@@ -37,11 +39,28 @@ static const rtc::LoggingSeverity logging_severities[] = {
 };
 
 
-webrtc::AudioProcessing* apm;
+webrtc::AudioProcessing* apm = NULL;
+
+
+HANDLE mutex = NULL;
+    
+void lock_mutex()
+{
+    if (! mutex)
+        mutex = CreateMutex(NULL, FALSE, NULL);
+    WaitForSingleObject(mutex, INFINITE);
+}
+    
+void unlock_mutex()
+{
+    ReleaseMutex(mutex);
+}
 
 
 int ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noise_suppression_level, int logging_severity)
 {
+    lock_mutex();
+    
     webrtc::AudioProcessing::Config config;
     
     int err = 0;
@@ -58,8 +77,9 @@ int ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noi
     apm = webrtc::AudioProcessingBuilder().Create();
     apm->ApplyConfig(config);
 
-    if ((err = apm->Initialize()) < 0)
-      return err;
+    err = apm->Initialize();
+    
+    unlock_mutex();
 
     return err;
 }
@@ -67,28 +87,64 @@ int ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noi
 
 void ap_delete()
 {
+    lock_mutex();
+    
     delete apm;
     apm = NULL;
+    
+    unlock_mutex();
 }
 
 
 void ap_delay(int delay)
 {
+    lock_mutex();
+    
+    // quicky
+    if (! apm)
+        return;
+    
     apm->set_stream_delay_ms(delay);
+    
+    unlock_mutex();
 }
 
 
 int ap_process_reverse(int rate, int channels, int16_t* data)
 {
+    lock_mutex();
+    
+    // quicky
+    if (! apm)
+        return 0;
+    
+    int err = 0;
+    
     webrtc::StreamConfig config(rate, channels, false);
     
-    return apm->ProcessReverseStream(data, config, config, data);
+    err = apm->ProcessReverseStream(data, config, config, data);
+    
+    unlock_mutex();
+    
+    return err;
 }
 
 
 int ap_process(int rate, int channels, int16_t* data)
 {
+    lock_mutex();
+    
+    // quicky
+    if (! apm)
+        return 0;
+    
+    int err = 0;
+    
     webrtc::StreamConfig config(rate, channels, false);
     
-    return apm->ProcessStream(data, config, config, data);
+    err = apm->ProcessStream(data, config, config, data);
+    
+    unlock_mutex();
+    
+    return err;
 }
