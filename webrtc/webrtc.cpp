@@ -19,11 +19,12 @@
 #endif
 
 
+extern "C" SHARED_PUBLIC const char* ap_error(int);
 extern "C" SHARED_PUBLIC void ap_setup(int, bool, bool, int, int);
 extern "C" SHARED_PUBLIC void ap_delete();
 extern "C" SHARED_PUBLIC void ap_delay(int);
-extern "C" SHARED_PUBLIC int  ap_process_reverse(int, int, int16_t*);
-extern "C" SHARED_PUBLIC int  ap_process(int, int, int16_t*);
+extern "C" SHARED_PUBLIC int ap_process_reverse(int, int, int16_t*);
+extern "C" SHARED_PUBLIC int ap_process(int, int, int16_t*);
 
 
 static const webrtc::AudioProcessing::Config::NoiseSuppression::Level noise_suppression_levels[] = {
@@ -75,6 +76,61 @@ void unlock_mutex()
 
 webrtc::AudioProcessing::Config config;
 bool configured = false;
+
+
+const char* ap_error(int err)
+{
+  const char* str = "unknown error";
+
+  switch (err) {
+    case webrtc::AudioProcessing::kNoError:
+      str = "success";
+      break;
+    case webrtc::AudioProcessing::kUnspecifiedError:
+      str = "unspecified error";
+      break;
+    case webrtc::AudioProcessing::kCreationFailedError:
+      str = "creating failed";
+      break;
+    case webrtc::AudioProcessing::kUnsupportedComponentError:
+      str = "unsupported component";
+      break;
+    case webrtc::AudioProcessing::kUnsupportedFunctionError:
+      str = "unsupported function";
+      break;
+    case webrtc::AudioProcessing::kNullPointerError:
+      str = "null pointer";
+      break;
+    case webrtc::AudioProcessing::kBadParameterError:
+      str = "bad parameter";
+      break;
+    case webrtc::AudioProcessing::kBadSampleRateError:
+      str = "bad sample rate";
+      break;
+    case webrtc::AudioProcessing::kBadDataLengthError:
+      str = "bad data length";
+      break;
+    case webrtc::AudioProcessing::kBadNumberChannelsError:
+      str = "bad number of channels";
+      break;
+    case webrtc::AudioProcessing::kFileError:
+      str = "file IO error";
+      break;
+    case webrtc::AudioProcessing::kStreamParameterNotSetError:
+      str = "stream parameter not set";
+      break;
+    case webrtc::AudioProcessing::kNotEnabledError:
+      str = "not enabled";
+      break;
+    case webrtc::AudioProcessing::kBadStreamParameterWarning:
+      str = "bad stream parameter warning";
+      break;
+    default:
+      break;
+  }
+
+  return str;
+}
 
 
 void ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noise_suppression_level, int logging_severity)
