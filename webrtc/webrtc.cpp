@@ -36,11 +36,11 @@ static const webrtc::AudioProcessing::Config::NoiseSuppression::Level noise_supp
 
 
 static const rtc::LoggingSeverity logging_severities[] = {
-    rtc::LS_NONE,
-    rtc::LS_ERROR,
-    rtc::LS_WARNING,
-    rtc::LS_INFO,
     rtc::LS_VERBOSE,
+    rtc::LS_INFO,
+    rtc::LS_WARNING,
+    rtc::LS_ERROR,
+    rtc::LS_NONE,
 };
 
 
