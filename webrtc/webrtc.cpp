@@ -20,7 +20,7 @@
 
 
 extern "C" SHARED_PUBLIC const char* ap_error(int);
-extern "C" SHARED_PUBLIC void ap_setup(int, bool, bool, int, int);
+extern "C" SHARED_PUBLIC void ap_setup(int, bool, bool, int, bool, int);
 extern "C" SHARED_PUBLIC void ap_delete();
 extern "C" SHARED_PUBLIC void ap_delay(int);
 extern "C" SHARED_PUBLIC int ap_process_reverse(int, int, int16_t*);
@@ -133,7 +133,7 @@ const char* ap_error(int err)
 }
 
 
-void ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noise_suppression_level, int logging_severity)
+void ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int noise_suppression_level, bool gain_controller, int logging_severity)
 {
     lock_mutex();
 
@@ -145,7 +145,7 @@ void ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int no
     config.echo_canceller.mobile_mode = false;
     config.noise_suppression.enabled = noise_suppress;
     config.noise_suppression.level = noise_suppression_levels[noise_suppression_level];
-    config.gain_controller1.enabled = true;
+    config.gain_controller1.enabled = gain_controller;
     
     configured = true;
     
