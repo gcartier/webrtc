@@ -146,6 +146,7 @@ void ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int no
     config.noise_suppression.enabled = noise_suppress;
     config.noise_suppression.level = noise_suppression_levels[noise_suppression_level];
     config.gain_controller1.enabled = gain_controller;
+    config.residual_echo_detector.enabled = false;
     
     configured = true;
     
