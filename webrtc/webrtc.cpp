@@ -12,6 +12,9 @@
 #endif
 
 
+// #define PROFILE_TIME
+
+
 #ifdef _WIN32
   #define SHARED_PUBLIC __declspec(dllexport)
 #else
@@ -77,6 +80,10 @@ void unlock_mutex()
 webrtc::AudioProcessing::Config config;
 bool configured = false;
 
+#ifdef PROFILE_TIME
+gint64 reverse_time = 0;
+gint64 process_time = 0;
+#endif
 
 const char* ap_error(int err)
 {
@@ -196,7 +203,7 @@ void ap_delay(int delay)
 int ap_process_reverse(int rate, int channels, int16_t* data)
 {
     lock_mutex();
-        
+    
     int err = 0;
     
     if (configured)
@@ -204,9 +211,20 @@ int ap_process_reverse(int rate, int channels, int16_t* data)
         if (! apm)
             ap_create();
         
+#ifdef PROFILE_TIME
+        gint64 before = g_get_monotonic_time();
+#endif
+        
         webrtc::StreamConfig config(rate, channels, false);
         
         err = apm->ProcessReverseStream(data, config, config, data);
+        
+#ifdef PROFILE_TIME
+        gint64 after = g_get_monotonic_time();
+        reverse_time += (after - before);
+        
+        printf("reverse %.1fms\n", (double) (after - before) / 10);
+#endif
     }
     
     unlock_mutex();
@@ -226,9 +244,20 @@ int ap_process(int rate, int channels, int16_t* data)
         if (! apm)
             ap_create();
         
+#ifdef PROFILE_TIME
+        gint64 before = g_get_monotonic_time();
+#endif
+        
         webrtc::StreamConfig config(rate, channels, false);
         
         err = apm->ProcessStream(data, config, config, data);
+        
+#ifdef PROFILE_TIME
+        gint64 after = g_get_monotonic_time();
+        process_time += (after - before);
+        
+        printf("process %.1fms\n", (double) (after - before) / 10);
+#endif
     }
     
     unlock_mutex();
