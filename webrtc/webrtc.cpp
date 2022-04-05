@@ -2,7 +2,6 @@
 #include <stdio.h>
 
 #include <rtc_base/logging.h>
-#include <api/audio/audio_frame.h>
 #include <modules/audio_processing/include/audio_processing.h>
 
 #ifdef _WIN32
@@ -47,7 +46,8 @@ static const rtc::LoggingSeverity logging_severities[] = {
 };
 
 
-webrtc::AudioProcessing* apm = NULL;
+bool apm_created = false;
+rtc::scoped_refptr<webrtc::AudioProcessing> apm;
 
 
 #ifdef _WIN32
@@ -163,10 +163,14 @@ void ap_setup(int processing_rate, bool echo_cancel, bool noise_suppress, int no
 
 void ap_create()
 {
-    apm = webrtc::AudioProcessingBuilder().Create();
+    std::unique_ptr<webrtc::AudioProcessingBuilder> ap_builder = std::make_unique<webrtc::AudioProcessingBuilder>();
+    apm = ap_builder->Create();
+    
     apm->ApplyConfig(config);
 
     apm->Initialize();
+    
+    apm_created = true;
 }
 
 
@@ -174,10 +178,11 @@ void ap_delete()
 {
     lock_mutex();
     
-    if (apm)
+    if (apm_created)
     {
-        delete apm;
-        apm = NULL;
+        // not sure but I think the previous apm will
+        // be released when the new one overrides it...
+        apm_created = false;
     }
     
     unlock_mutex();
@@ -190,7 +195,7 @@ void ap_delay(int delay)
     
     if (configured)
     {
-        if (! apm)
+        if (! apm_created)
             ap_create();
         
         apm->set_stream_delay_ms(delay);
@@ -208,14 +213,14 @@ int ap_process_reverse(int rate, int channels, int16_t* data)
     
     if (configured)
     {
-        if (! apm)
+        if (! apm_created)
             ap_create();
         
 #ifdef PROFILE_TIME
         gint64 before = g_get_monotonic_time();
 #endif
         
-        webrtc::StreamConfig config(rate, channels, false);
+        webrtc::StreamConfig config(rate, channels);
         
         err = apm->ProcessReverseStream(data, config, config, data);
         
@@ -241,14 +246,14 @@ int ap_process(int rate, int channels, int16_t* data)
     
     if (configured)
     {
-        if (! apm)
+        if (! apm_created)
             ap_create();
         
 #ifdef PROFILE_TIME
         gint64 before = g_get_monotonic_time();
 #endif
         
-        webrtc::StreamConfig config(rate, channels, false);
+        webrtc::StreamConfig config(rate, channels);
         
         err = apm->ProcessStream(data, config, config, data);
         
