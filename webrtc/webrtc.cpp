@@ -12,6 +12,7 @@
 
 
 // #define PROFILE_TIME
+// #define PRINT_STREAM
 
 
 #ifdef _WIN32
@@ -219,6 +220,10 @@ int ap_process_reverse(int rate, int channels, int16_t* data)
 #ifdef PROFILE_TIME
         gint64 before = g_get_monotonic_time();
 #endif
+#ifdef PRINT_STREAM
+printf("$");
+fflush(stdout);
+#endif
         
         webrtc::StreamConfig config(rate, channels);
         
@@ -251,6 +256,10 @@ int ap_process(int rate, int channels, int16_t* data)
         
 #ifdef PROFILE_TIME
         gint64 before = g_get_monotonic_time();
+#endif
+#ifdef PRINT_STREAM
+printf(".");
+fflush(stdout);
 #endif
         
         webrtc::StreamConfig config(rate, channels);
